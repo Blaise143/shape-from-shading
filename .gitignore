@@ -1,0 +1,6 @@
+__pycache__
+wandb
+.idea
+out/
+GT_data4
+images/
