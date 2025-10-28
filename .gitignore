@@ -4,4 +4,5 @@ wandb
 out/
 GT_data4
 images/
+test.py
 .DS_Store
