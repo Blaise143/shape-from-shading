@@ -4,3 +4,4 @@ wandb
 out/
 GT_data4
 images/
+.DS_Store
