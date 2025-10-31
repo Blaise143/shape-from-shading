@@ -83,7 +83,7 @@ def plot_depth_3d_plotly(
     save_path: Optional[str] = None,
     show: bool = False,
     log: bool = False,
-    normalize_xyz: bool = True,
+    normalize_xyz: bool = False,
     mask: Optional[Union[torch.Tensor, np.ndarray]] = None,
     hide_invalid: bool = True,
     adjust_depth_map: bool = False,
@@ -113,8 +113,9 @@ def plot_depth_3d_plotly(
 
     n, m = depth.shape
     # X, Y = np.meshgrid(np.arange(m), np.arange(n))
-    X, Y = np.meshgrid(np.linspace(-1, 1, m), np.linspace(-1, 1, n))
+    # X, Y = np.meshgrid(np.linspace(-1, 1, m), np.linspace(-1, 1, n))
 
+    X, Y = np.meshgrid(np.linspace(-1, 1, m), np.linspace(-1, 1, n), indexing="xy")
     # X, Y = X / (m - 1), Y / (n - 1)  # Trial, might delete later
 
     # if hide_invalid and mask is not None:
@@ -147,7 +148,7 @@ def plot_depth_3d_plotly(
             zaxis_title="Depth",
             aspectmode="data",
             # aspectmode="manual",
-            # aspectratio=dict(x=1, y=1, z=1),
+            aspectratio=dict(x=2, y=2, z=1),
         ),
         margin=dict(l=0, r=0, b=0, t=40),
     )
