@@ -187,9 +187,10 @@ def _robustify_pq(p, q, grad_clip_pct=99.0, pq_smooth_sigma=1.0):
 def _poisson_integration(p, q):
     H, W = p.shape
     h = 1  # / H
+    w = 1  # / W
     lap = np.zeros((H, W), np.float32)
     lap[1:-1, 1:-1] = (
-        (p[1:-1, 2:] - p[1:-1, :-2]) / h + (q[2:, 1:-1] - q[:-2, 1:-1]) / h
+        (p[1:-1, 2:] - p[1:-1, :-2]) * h + (q[2:, 1:-1] - q[:-2, 1:-1]) * w
     ) * 0.5
     F = cv2.dct(lap.astype(np.float32))
     i, j = np.meshgrid(np.arange(W), np.arange(H))
@@ -200,49 +201,46 @@ def _poisson_integration(p, q):
     return cv2.idct(Z)
 
 
-def integrate_normals(normals, grad_clip_pct=99.0, pq_smooth_sigma=1.0):
+def integrate_normals_best(normals, grad_clip_pct=99.0, pq_smooth_sigma=1.0):
     print("integrating")
     p = normals[:, :, 0] / (normals[:, :, 2] + 1e-3)
     q = normals[:, :, 1] / (normals[:, :, 2] + 1e-3)
     p, q = _robustify_pq(p, q, grad_clip_pct, pq_smooth_sigma)
     z = _poisson_integration(p, q)
-    z = z - z.min()
-    # z = z / z.max()
-    z /= z.max() - z.min() + 1e-8
-    z = z * 0.8
-    # z = z - np.nanmin(z)
-    return z  # _poisson_integration(p, q)
+    return z
+
+
+def integrate_normals(
+    normals,
+    grad_clip_pct=99.0,
+    pq_smooth_sigma=1.0,
+    x_range=(-1.0, 1.0),
+    y_range=(-1.0, 1.0),
+):
+    """
+    normals: (H, W, 3) unit normals.
+    """
+    print("integrating")
+    H, W, _ = normals.shape
+
+    nz = np.clip(normals[:, :, 2], 1e-6, None)
+
+    p_world = -normals[:, :, 0] / nz
+    q_world = -normals[:, :, 1] / nz
+
+    x_min, x_max = x_range
+    y_min, y_max = y_range
+    dx = (x_max - x_min) / (W - 1)  # world units per pixel in x
+    dy = (y_max - y_min) / (H - 1)  # world units per pixel in y
+    p = p_world * dx
+    q = q_world * dy
+
+    p, q = _robustify_pq(p, q, grad_clip_pct, pq_smooth_sigma)
+
+    z = _poisson_integration(p, q)
+
+    return z
 
 
 if __name__ == "__main__":
     ...
-    # b_mask = get_boolean_mask("images/mask_latest_again.png")
-    # edge, n_bdry = outward_boundary_normals(b_mask, smooth=True, sigma=2.0)
-    #
-    # # ...
-    # # from test_4 import get_image
-    #
-    # t = get_image("images/image.png")  # torch.randn(818, 608)
-    # print(t.shape)
-    # plt.imshow(t, cmap="gray")
-    # plt.show()
-    # t_padded = pad(t)
-    # # print(t_padded.shape)
-    # plt.imshow(t_padded, cmap="gray")  # ; plt.show()
-    # # plt.savefig("images/padded_face.png")
-    # # plt.imsave("images/padded_face.png", t_padded)
-    # # plt.show()
-    # # exit()
-    # t_mask = get_image("images/image_mask.png")
-    #
-    # plt.imshow(t_mask, cmap="gray"); plt.show()
-    # t_mask_padded = pad(t_mask)
-    # plt.imshow(t_mask_padded, cmap="gray"); plt.imsave("images/padded_face_mask.png", t_mask_padded)#plt.savefig("images/padded_face_mask.png")
-    # plt.show()
-    # # exit()
-    # edge, b_mask, n_bdry = get_boundary_normals()#mask_path="images/padded_face_mask.png")
-    # visualize_normals_boundary(n_bdry.cpu(), mask=edge.cpu())
-    # plot_boundary_normals_arrows(
-    # edge, n_bdry, mask=b_mask, stride=20, len_px=30.0, figsize=(6, 6))
-    # # print(f"boundary shape: {n_bdry.shape}")
-    # breakpoint()
