@@ -147,8 +147,6 @@ def plot_depth_3d_plotly(
             yaxis_title="Y",
             zaxis_title="Depth",
             aspectmode="data",
-            # aspectmode="manual",
-            aspectratio=dict(x=2, y=2, z=1),
         ),
         margin=dict(l=0, r=0, b=0, t=40),
     )
