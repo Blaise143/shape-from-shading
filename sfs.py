@@ -1,5 +1,4 @@
 # ruff: noqa: F405, E742
-from os import read
 import torch
 from PIL import Image
 import torchvision.transforms as T
@@ -9,11 +8,11 @@ import numpy as np
 from utils.grad_helpers import *
 from datetime import datetime
 from config import SFSConfig
-from typing import Optional, Union
+from typing import Optional
 
 
 def get_img_and_mask(img_path: str, kind: str, mask_path: Optional[str] = None):
-    assert kind in ["sphere", "cube"], "kind is invalid"
+    assert kind in ["sphere", "cube", "face", "ones"], "kind is invalid"
 
     img = Image.open(img_path).convert("L")
     img_np = np.array(img)
@@ -24,18 +23,29 @@ def get_img_and_mask(img_path: str, kind: str, mask_path: Optional[str] = None):
         else:
             mask = Image.open(mask_path).convert("L")
             mask = np.array(mask) > 0
+    elif kind == "face":
+        if mask_path is None:
+            raise RuntimeError("mask invalid")
+        else:
+            mask = Image.open(mask_path).convert("L")
+            mask = np.array(mask) > 0
     else:
         mask = img_np > 0
+
+    if kind == "ones":
+        mask = np.ones_like(img_np)
 
     return img_np, mask
 
 
-def shape_from_shading(cfg: SFSConfig, mask_pth: Optional[str] = None):
+def shape_from_shading(
+    cfg: SFSConfig, mask_pth: Optional[str] = None, kind: str = "face"
+):
     """
     When mask None -> sphere. when it isnt: cube
     """
     device = get_device()
-    img_np, mask = get_img_and_mask(cfg.image_path, mask_path=mask_pth, kind="sphere")
+    img_np, mask = get_img_and_mask(cfg.image_path, mask_path=mask_pth, kind=kind)
     if isinstance(mask, np.ndarray):
         mask = torch.from_numpy(mask).to(device)
     cfg.save_params(f"{cfg.save_to}/params.json")
@@ -130,15 +140,8 @@ if __name__ == "__main__":
 
     ### dirs: out/normals/face, out/normals/sphere
     img_pth = "images/sphere.png"  # range between 0 and about 0.5
-    cube_mask_pth = "images/cube_mask.png"
-    ## read_img = plt.imread(img_pth, )
-    ## sphere_mask = read_img > 0
-    # mask_path = "images/cube_mask.png"
-    # read_img = Image.open(mask_path).convert("L")
-    # mask = np.array(read_img) > 0
-    img, mask = get_img_and_mask(
-        "images/sphere.png", kind="sphere", mask_path="images/cube_mask.png"
-    )
+    msk_pth = "images/image_mask.png"
+    img, mask = get_img_and_mask(img_path=img_pth, kind="sphere", mask_path=msk_pth)
     folder_name = folder_name = (
         "out/"
         + img_pth.split("/")[-1].split(".")[0].replace("/", "-")
@@ -148,21 +151,22 @@ if __name__ == "__main__":
     os.makedirs(folder_name, exist_ok=True)
     config = SFSConfig(
         image_path=img_pth,
-        num_iters=1000,
-        lambda_smooth=0.01,
+        num_iters=2_000,
+        lambda_smooth=1.0,
         lr=1e-2,
         optimize_light=False,
-        light_direction=torch.tensor([0.0, 0, 1]),  # [0.045, 0.659, 0.715]),
+        light_direction=torch.tensor([0, 0, 1.0]),  # [0.045, 0.659, 0.715]),
         save_to=folder_name,
         optimize_albedo=False,
         use_mask=True,
         init_kind="init_grads",  # init_grads, zeroes, sphere, ones
     )
     config.save_params(path=f"{folder_name}/params.json")
-    normals, reflectance, mask = shape_from_shading(config, mask_pth=cube_mask_pth)
+    normals, reflectance, mask = shape_from_shading(
+        config, mask_pth=msk_pth, kind="sphere"
+    )
     plot_normals(normals, save_path=f"{folder_name}/final_normals.png")
     z = integrate_normals(normals.numpy() * mask[..., None])
-    # z = z / 2
     print("Inspect Z!")
     breakpoint()
     plot_depth_3d_plotly(
@@ -171,7 +175,7 @@ if __name__ == "__main__":
         show=True,
         normalize_xyz=False,
         mask=mask,
-        hide_invalid=False,
+        hide_invalid=True,
     )
     plot_2d(
         reflectance, title="reflectance", save_path=f"{folder_name}/reflectance.png"
