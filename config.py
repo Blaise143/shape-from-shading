@@ -16,6 +16,7 @@ class SFSConfig:
     optimize_albedo: bool = False
     use_mask: bool = False
     init_kind: str = "init_grads"
+    desc: Optional[str] = None
 
     def to_dict(self):
         d = asdict(self)
