@@ -5,46 +5,24 @@ import torchvision.transforms as T
 from tqdm import tqdm
 import wandb
 import numpy as np
-from utils.grad_helpers import *
+from utils import *  # .grad_helpers import *
 from datetime import datetime
 from config import SFSConfig
 from typing import Optional
-
-
-def get_img_and_mask(img_path: str, kind: str, mask_path: Optional[str] = None):
-    assert kind in ["sphere", "cube", "face", "ones"], "kind is invalid"
-
-    img = Image.open(img_path).convert("L")
-    img_np = np.array(img)
-
-    if kind == "cube":
-        if mask_path is None:
-            raise RuntimeError("Provide a valid mask path for a cube")
-        else:
-            mask = Image.open(mask_path).convert("L")
-            mask = np.array(mask) > 0
-    elif kind == "face":
-        if mask_path is None:
-            raise RuntimeError("mask invalid")
-        else:
-            mask = Image.open(mask_path).convert("L")
-            mask = np.array(mask) > 0
-    else:
-        mask = img_np > 0
-
-    if kind == "ones":
-        mask = np.ones_like(img_np)
-
-    return img_np, mask
+from data_load import ShapeFromShadingDataset
+# from utils.utils import get_img_and_mask
+# from utils import normals_to_fg, fg_to_normals
+#
+#     from utils import plot_2d, plot_depth_3d_plotly
 
 
 def shape_from_shading(
-    cfg: SFSConfig, mask_pth: Optional[str] = None, kind: str = "face"
+    cfg: SFSConfig, mask_pth: Optional[str] = None, kind: str = "custom_mask"
 ):
     """
     When mask None -> sphere. when it isnt: cube
     """
-
+    # cfg.parametrization_type
     device = get_device()
     img_np, mask = get_img_and_mask(cfg.image_path, mask_path=mask_pth, kind=kind)
     if isinstance(mask, np.ndarray):
@@ -68,6 +46,13 @@ def shape_from_shading(
         image_np=img_np,
         kind=init_kind,  # "init_grads"
     )
+
+    if cfg.parametrization_type == "stereographic":
+        fg = normals_to_fg(raw)
+        optim_var = torch.nn.Parameter(fg)
+    else:
+        optim_var = torch.nn.Parameter(raw)
+
     wandb.init(project="sfs")
     if cfg.light_direction is None:
         light_dir_ = torch.tensor([0.3, 0.3, 0.9], device=device)
@@ -78,12 +63,14 @@ def shape_from_shading(
     if cfg.optimize_light:
         light_dir = torch.nn.Parameter(light_dir_.clone().detach())
         optimizables = (
-            [raw, light_dir, albedo] if cfg.optimize_albedo else [raw, light_dir]
+            [optim_var, light_dir, albedo]
+            if cfg.optimize_albedo
+            else [optim_var, light_dir]
         )
         opt = torch.optim.Adam(optimizables, lr=cfg.lr)
     else:
         light_dir = light_dir_
-        optimizables = [raw, albedo] if cfg.optimize_albedo else [raw]
+        optimizables = [optim_var, albedo] if cfg.optimize_albedo else [optim_var]
         opt = torch.optim.Adam(optimizables, lr=cfg.lr)
 
     def l2(x, mask=None):
@@ -92,14 +79,17 @@ def shape_from_shading(
         grads = torch.gradient(x, dim=(0, 1))  # grad_x , grad_y
         return sum((g**2).mean() for g in grads)
 
-    #    mask = (img_tensor > 0).to(device)
     plot_normals(
         raw.detach().cpu().clone(), save_path=f"{cfg.save_to}/initialization.png"
     )
+    print(f"using parametrization_type: {cfg.parametrization_type}")
     for _ in tqdm(range(cfg.num_iters)):
         opt.zero_grad()
 
-        n = raw / (raw.norm(dim=-1, keepdim=True) + 1e-8)
+        if cfg.parametrization_type == "stereographic":
+            n = fg_to_normals(optim_var)
+        else:
+            n = optim_var / (optim_var.norm(dim=-1, keepdim=True) + 1e-8)
         L = light_dir / light_dir.norm()
         if _ in [1, 10, 15, 20, 25, 100, 200, 1000, 2000, 3000, 4000, 5000]:
             plot_normals(
@@ -123,7 +113,12 @@ def shape_from_shading(
         loss.backward()
         opt.step()
 
-    normals = (raw / (raw.norm(dim=-1, keepdim=True) + 1e-8)).detach().cpu()
+    if cfg.parametrization_type == "stereographic":
+        normals = fg_to_normals(optim_var.detach()).cpu()
+    else:
+        normals = (
+            (optim_var / (optim_var.norm(dim=-1, keepdim=True) + 1e-8)).detach().cpu()
+        )
     L = light_dir / light_dir.norm()
     reflectance = albedo.cpu() * (normals.cpu() * L.view(1, 1, 3).cpu()).sum(dim=-1)
     if cfg.optimize_light:
@@ -134,33 +129,18 @@ def shape_from_shading(
 
 
 if __name__ == "__main__":
-    from utils.helpers import integrate_normals
-    from utils.plot_helpers import plot_2d, plot_depth_3d_plotly
+    # from utils.helpers import integrate_normals
 
     import os
     import numpy as np
 
-    DATA = {
-        "sphere": "GT_data4/Cue1/sphere.png",
-        "cylinder": "GT_data4/Cue1/cylinder.png",
-        "cube": "GT_data4/Cue1/cube.png",
-        "pyramid": "GT_data4/Cue1/pyramid.png",
-        "face": "images/face.png",
-    }
-    MASKS = {
-        "sphere": "GT_data4/Masks/sphere.png",
-        "cylinder": "GT_data4/Masks/cylinder.png",
-        "pyramid": "GT_data4/Masks/pyramid.png",
-        "cube": "GT_data4/Masks/cube.png",
-        "face": "images/image_mask.png",
-    }
-    ### dirs: out/normals/face, out/normals/sphere
-    # img_pth = "images/sphere.png"  # range between 0 and about 0.5
-    # msk_pth = "images/image_mask.png"
-    target = "face"
-    img_pth = DATA[target]
-    msk_pth = MASKS[target]
-    img, mask = get_img_and_mask(img_path=img_pth, kind="face", mask_path=msk_pth)
+    dataset = ShapeFromShadingDataset(root_dir="GT_data4")
+    cue, obj = "Cue1", "cube"
+    paths = dataset.get(cue=cue, obj=obj)
+    img_pth, msk_pth = paths["image"], paths["mask"]
+    img, mask = get_img_and_mask(
+        img_path=img_pth, kind="custom_mask", mask_path=msk_pth
+    )
     folder_name = folder_name = (
         "out/"
         + img_pth.split("/")[-1].split(".")[0].replace("/", "-")
@@ -170,7 +150,7 @@ if __name__ == "__main__":
     os.makedirs(folder_name, exist_ok=True)
     config = SFSConfig(
         image_path=img_pth,
-        num_iters=2_000,
+        num_iters=2000,
         lambda_smooth=1.0,
         lr=1e-2,
         optimize_light=True,
@@ -179,15 +159,14 @@ if __name__ == "__main__":
         optimize_albedo=False,
         use_mask=True,
         init_kind="init_grads",  # init_grads, zeroes, sphere, ones
+        parametrization_type="cartesian",
     )
     config.save_params(path=f"{folder_name}/params.json")
     normals, reflectance, mask = shape_from_shading(
-        config, mask_pth=msk_pth, kind="face"
+        config, mask_pth=msk_pth, kind="custom_mask"
     )
     plot_normals(normals, save_path=f"{folder_name}/final_normals.png")
     z = integrate_normals(normals.numpy() * mask[..., None])
-    print("Inspect Z!")
-    breakpoint()
     plot_depth_3d_plotly(
         depth=z,
         save_path=f"{folder_name}/depth.html",
