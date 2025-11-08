@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import Optional
+from typing import Optional, Literal
 import torch
 import json
 
@@ -17,6 +17,12 @@ class SFSConfig:
     use_mask: bool = False
     init_kind: str = "init_grads"
     desc: Optional[str] = None
+    parametrization_type: Literal["cartesian", "stereographic"] = "cartesian"
+
+    def __post_init__(self):
+        valid_parametrizations = ["cartesian", "stereographic"]
+        if self.parametrization_type not in valid_parametrizations:
+            raise ValueError("Parametrization should be cartesian or stereographic")
 
     def to_dict(self):
         d = asdict(self)
