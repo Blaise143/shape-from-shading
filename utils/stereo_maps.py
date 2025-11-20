@@ -1,27 +1,28 @@
 import torch
 
 
-def normals_to_fg(normals: torch.Tensor):
-    normals = normals / (normals.norm(dim=-1, keepdim=True) + 1e-8)
-    nx, ny, nz = normals[..., 0], normals[..., 1], normals[..., 2]
-    nz = torch.clamp(nz, min=1e-8)
-    p = nx / nz
-    q = ny / nz
-    denom = 1 + torch.sqrt(1 + p**2 + q**2)
-    f = 2 * p / denom
-    g = 2 * q / denom
-    return torch.stack((f, g), dim=-1)
-
-
 def fg_to_normals(fg: torch.Tensor):
     f, g = fg[..., 0], fg[..., 1]
     r2 = f**2 + g**2
-    denom = 1 - 0.25 * r2
-    p = f / denom
-    q = g / denom
-    n = torch.stack((p, q, torch.ones_like(p)), dim=-1)
-    n = n / n.norm(dim=-1, keepdim=True)
-    return n
+
+    denom = 4 + r2
+    nx = 4 * f / denom
+    ny = 4 * g / denom
+    nz = (4 - r2) / denom
+
+    return torch.stack((nx, ny, nz), dim=-1)
+
+
+def normals_to_fg(normals: torch.Tensor):
+    normals = normals / (normals.norm(dim=-1, keepdim=True) + 1e-8)
+    nx, ny, nz = normals[..., 0], normals[..., 1], normals[..., 2]
+
+    denom = 1 + nz + 1e-8
+
+    f = 2 * nx / denom
+    g = 2 * ny / denom
+
+    return torch.stack((f, g), dim=-1)
 
 
 if __name__ == "__main__":
