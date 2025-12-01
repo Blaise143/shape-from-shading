@@ -1,19 +1,13 @@
-# ruff: noqa: F405, E742
+# ruff: noqa: F404, E742
+# noqa F405
 import torch
-from PIL import Image
 import torchvision.transforms as T
 from tqdm import tqdm
 import wandb
 import numpy as np
 from utils import *  # .grad_helpers import *
-from datetime import datetime
 from config import SFSConfig
 from typing import Optional
-from data_load import ShapeFromShadingDataset
-# from utils.utils import get_img_and_mask
-# from utils import normals_to_fg, fg_to_normals
-#
-#     from utils import plot_2d, plot_depth_3d_plotly
 
 
 def shape_from_shading(
@@ -22,14 +16,11 @@ def shape_from_shading(
     """
     When mask None -> sphere. when it isnt: cube
     """
-    # cfg.parametrization_type
     device = get_device()
     img_np, mask = get_img_and_mask(cfg.image_path, mask_path=mask_pth, kind=kind)
     if isinstance(mask, np.ndarray):
         mask = torch.from_numpy(mask).to(device)
     cfg.save_params(f"{cfg.save_to}/params.json")
-    # img = Image.open(cfg.image_path).convert("L")
-    # img_np = np.array(img)
     if cfg.save_to:
         save_init(img=img_np, save_path=cfg.save_to + "/input.png")
 
@@ -73,7 +64,10 @@ def shape_from_shading(
         optimizables = [optim_var, albedo] if cfg.optimize_albedo else [optim_var]
         opt = torch.optim.Adam(optimizables, lr=cfg.lr)
 
-    def l2(x, mask=None):
+    def l2(x: torch.Tensor, mask=None) -> Tuple:
+        """
+        TODO: refactor to another file.. losses.py
+        """
         if mask is not None:
             x = x * mask[..., None]
         grads = torch.gradient(x, dim=(0, 1))  # grad_x , grad_y
@@ -83,6 +77,7 @@ def shape_from_shading(
         raw.detach().cpu().clone(), save_path=f"{cfg.save_to}/initialization.png"
     )
     print(f"using parametrization_type: {cfg.parametrization_type}")
+    # pyrefly: ignore [not-iterable]
     for _ in tqdm(range(cfg.num_iters)):
         opt.zero_grad()
 
@@ -91,7 +86,10 @@ def shape_from_shading(
         else:
             n = optim_var / (optim_var.norm(dim=-1, keepdim=True) + 1e-8)
         L = light_dir / light_dir.norm()
-        if _ in [1, 10, 15, 20, 25, 100, 200, 1000, 2000, 3000, 4000, 5000]:
+        if (
+            _ in [100, 200, 300, 400, 500, 600, 700, 800, 1000, 1500, 1600]
+            or _ % 200 == 0
+        ):
             plot_normals(
                 n.detach().cpu().clone(), save_path=f"{cfg.save_to}/normals{_}.png"
             )
@@ -114,11 +112,13 @@ def shape_from_shading(
         opt.step()
 
     if cfg.parametrization_type == "stereographic":
-        normals = fg_to_normals(optim_var.detach()).cpu()
+        normals = (
+            fg_to_normals(optim_var.detach()).cpu() * mask.detach().cpu()[..., None]
+        )
     else:
         normals = (
             (optim_var / (optim_var.norm(dim=-1, keepdim=True) + 1e-8)).detach().cpu()
-        )
+        ) * mask.detach().cpu()[..., None]
     L = light_dir / light_dir.norm()
     reflectance = albedo.cpu() * (normals.cpu() * L.view(1, 1, 3).cpu()).sum(dim=-1)
     if cfg.optimize_light:
@@ -130,51 +130,56 @@ def shape_from_shading(
 
 if __name__ == "__main__":
     # from utils.helpers import integrate_normals
-
+    ...
     import os
-    import numpy as np
-
-    dataset = ShapeFromShadingDataset(root_dir="GT_data4")
-    cue, obj = "Cue1", "cube"
-    paths = dataset.get(cue=cue, obj=obj)
-    img_pth, msk_pth = paths["image"], paths["mask"]
-    img, mask = get_img_and_mask(
-        img_path=img_pth, kind="custom_mask", mask_path=msk_pth
-    )
-    folder_name = folder_name = (
-        "out/"
-        + img_pth.split("/")[-1].split(".")[0].replace("/", "-")
-        + "/"
-        + datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    )
-    os.makedirs(folder_name, exist_ok=True)
-    config = SFSConfig(
-        image_path=img_pth,
-        num_iters=2000,
-        lambda_smooth=1.0,
-        lr=1e-2,
-        optimize_light=True,
-        light_direction=torch.tensor([0, 0, 1.0]),  # [0.045, 0.659, 0.715]),
-        save_to=folder_name,
-        optimize_albedo=False,
-        use_mask=True,
-        init_kind="init_grads",  # init_grads, zeroes, sphere, ones
-        parametrization_type="cartesian",
-    )
-    config.save_params(path=f"{folder_name}/params.json")
-    normals, reflectance, mask = shape_from_shading(
-        config, mask_pth=msk_pth, kind="custom_mask"
-    )
-    plot_normals(normals, save_path=f"{folder_name}/final_normals.png")
-    z = integrate_normals(normals.numpy() * mask[..., None])
-    plot_depth_3d_plotly(
-        depth=z,
-        save_path=f"{folder_name}/depth.html",
-        show=True,
-        normalize_xyz=False,
-        mask=mask,
-        hide_invalid=True,
-    )
-    plot_2d(
-        reflectance, title="reflectance", save_path=f"{folder_name}/reflectance.png"
-    )
+    # import numpy as np
+    #
+    # dataset = ShapeFromShadingDataset(root_dir="GT_data4")
+    # run_experiments(
+    #     dataset,
+    #     base_out_dir="out",
+    #     focus_object=None,
+    #     num_iters=2000,
+    #     lr=1e-2,
+    #     lambda_smooth=1.0,
+    #     optimize_light=True,
+    #     light_direction=torch.tensor([0.0, 0.0, 1]),
+    #     optimize_albedo=False,
+    #     init_kind="init_grads",
+    #     parametrization_type="cartesian",
+    # )
+    # cue, obj = "Cue1", "cube"
+    # paths = dataset.get(cue=cue, obj=obj)
+    # img_pth, msk_pth = paths["image"], paths["mask"]
+    # folder_name = make_output_folder(base_dir="out", cue=cue, obj=obj)
+    #
+    # config = SFSConfig(
+    #     image_path=img_pth,
+    #     num_iters=2000,
+    #     lambda_smooth=1.0,
+    #     lr=1e-2,
+    #     optimize_light=True,
+    #     light_direction=torch.tensor([0, 0, 1.0]),  # [0.045, 0.659, 0.715]),
+    #     save_to=folder_name,
+    #     optimize_albedo=False,
+    #     use_mask=True,
+    #     init_kind="init_grads",  # init_grads, zeroes, sphere, ones
+    #     parametrization_type="cartesian",
+    # )
+    # config.save_params(path=f"{folder_name}/params.json")
+    # normals, reflectance, mask = shape_from_shading(
+    #     config, mask_pth=msk_pth, kind="custom_mask"
+    # )
+    # plot_normals(normals, save_path=f"{folder_name}/final_normals.png")
+    # z = integrate_normals(normals.numpy() * mask[..., None])
+    # plot_depth_3d_plotly(
+    #     depth=z,
+    #     save_path=f"{folder_name}/depth.html",
+    #     show=True,
+    #     normalize_xyz=False,
+    #     mask=mask,
+    #     hide_invalid=True,
+    # )
+    # plot_2d(
+    #     reflectance, title="reflectance", save_path=f"{folder_name}/reflectance.png"
+    # )
