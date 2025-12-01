@@ -153,6 +153,7 @@ def plot_depth_3d_plotly(
 
     # fig.show()
     if save_path:
+        # pyrefly: ignore [bad-assignment]
         save_path = Path(save_path)
         fig.write_html(str(save_path), include_plotlyjs="cdn")
 

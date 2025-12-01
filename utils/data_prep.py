@@ -50,6 +50,7 @@ def get_boundary(img=None, device=None, mask=None):
     if img is not None:
         H, W = img.shape
     if mask is None:
+        # pyrefly: ignore [bad-argument-type]
         boundary_mask = torch.zeros_like(img, dtype=torch.bool, device=device)
         boundary_mask[0, :] = True
         boundary_mask[-1, :] = True

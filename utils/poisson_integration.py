@@ -40,10 +40,15 @@ def integrate_gradient_field(gradient_field: np.ndarray, axis: int) -> np.ndarra
 def calculate_heights(
     left_gradients: np.ndarray, top_gradients
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    # pyrefly: ignore [bad-argument-count]
     left_heights = integrate_gradient_field(left_gradients, 1)
+    # pyrefly: ignore [bad-argument-count, no-matching-overload]
     right_heights = np.fliplr(integrate_gradient_field(np.fliplr(-left_gradients), 1))
+    # pyrefly: ignore [bad-argument-count]
     top_heights = integrate_gradient_field(top_gradients, 0)
+    # pyrefly: ignore [bad-argument-count, no-matching-overload]
     bottom_heights = np.flipud(integrate_gradient_field(np.flipud(-top_gradients), 0))
+    # pyrefly: ignore [bad-return]
     return left_heights, right_heights, top_heights, bottom_heights
 
 

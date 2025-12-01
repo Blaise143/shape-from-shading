@@ -1,4 +1,5 @@
 import torch
+import cv2
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from enum import StrEnum
@@ -102,27 +103,6 @@ def compute_smoothness_map(n: torch.Tensor) -> torch.Tensor:
     return mag  # (H, W)
 
 
-#
-# def show_smoothness(
-#     n: torch.Tensor, mask: torch.Tensor = None, title="Smoothness magnitude"
-# ):
-#     """
-#     n: (H, W, 3)
-#     mask: optional (H, W) boolean tensor to restrict display inside object
-#     """
-#     sm = compute_smoothness_map(n)
-#
-#     if mask is not None:
-#         sm = sm.masked_fill(~mask.bool(), float("nan"))
-#
-#     arr = sm.detach().cpu().numpy()
-#     plt.imshow(arr, cmap="magma")
-#     plt.colorbar(fraction=0.046, pad=0.04)
-#     plt.title(title)
-#     plt.axis("off")
-#     plt.show()
-
-
 @torch.no_grad()
 def show_boundary_angle_map(
     n: torch.Tensor,
@@ -157,21 +137,6 @@ def show_boundary_angle_map(
     plt.title(title)
     plt.axis("off")
     plt.show()
-
-    # Optional: histogram over boundary pixels
-    # vals = ang[E].detach().cpu().numpy().ravel()
-    # plt.figure()
-    # plt.hist(vals, bins=50)
-    # plt.xlabel("angle (deg)")
-    # plt.ylabel("count")
-    # plt.title("Boundary angle histogram")
-    # plt.show()
-
-    # return ang  # return tensor in case you want to log stats
-
-
-import numpy as np
-import cv2
 
 
 def _robustify_pq(p, q, grad_clip_pct=99.0, pq_smooth_sigma=1.0):

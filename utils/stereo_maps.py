@@ -31,6 +31,5 @@ if __name__ == "__main__":
     normals = normals / normals.norm(dim=-1, keepdim=True)
     fg = normals_to_fg(normals)
     n_rec = fg_to_normals(fg)
-    breakpoint()
     print(normals / normals.norm(dim=-1, keepdim=True))
     print(n_rec)

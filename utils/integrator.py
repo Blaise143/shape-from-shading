@@ -12,13 +12,14 @@ def _robustify_pq(p, q, grad_clip_pct=99.0, pq_smooth_sigma=1.0):
     return p, q
 
 
-def _poisson_integration(p, q):
+def _poisson_integration(p: np.ndarray, q: np.ndarray):
+    """
+    Creates a laplacian, throws it into the frequenxy domain
+    """
     H, W = p.shape
-    h = 1  # / H
-    w = 1  # / W
     lap = np.zeros((H, W), np.float32)
     lap[1:-1, 1:-1] = (
-        (p[1:-1, 2:] - p[1:-1, :-2]) * h + (q[2:, 1:-1] - q[:-2, 1:-1]) * w
+        (p[1:-1, 2:] - p[1:-1, :-2]) + (q[2:, 1:-1] - q[:-2, 1:-1])
     ) * 0.5
     F = cv2.dct(lap.astype(np.float32))
     i, j = np.meshgrid(np.arange(W), np.arange(H))

@@ -8,6 +8,8 @@ import textwrap
 import re
 import json
 
+__all__ = ["save_init", "plot_normals", "get_device", "get_init"]
+
 
 def save_params(params: dict, path: str):
     """
@@ -168,6 +170,7 @@ def get_init(shape, image_np=None, kind="ones", device=get_device()):
         normals.requires_grad = True
         return normals
     else:
+        # pyrefly: ignore [bad-argument-type]
         grad_x, grad_y = compute_gradients(image_np)
         grad_x, grad_y = _robustify_pq(grad_x, grad_y)
         normals = compute_normals_from_gradients(grad_x, grad_y)  # (p, q)
