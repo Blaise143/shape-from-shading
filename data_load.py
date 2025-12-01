@@ -29,6 +29,11 @@ class ShapeFromShadingDataset:
             raise ValueError(f"Invalid cue/object: {cue}/{obj}")
         return self.data[cue][obj]
 
+    def list_objects(self, cue):
+        if cue not in self.data:
+            raise ValueError(f"Invalid cue: {cue}")
+        return list(self.data[cue].keys())
+
 
 if __name__ == "__main__":
     import pprint as pp

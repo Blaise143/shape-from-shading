@@ -87,6 +87,7 @@ if __name__ == "__main__":
     plt.show()
     breakpoint()
 
+    # pyrefly: ignore [missing-module-attribute]
     from utils import load_img
 
     img_2 = load_img("../images/sphere.png")
