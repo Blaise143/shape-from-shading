@@ -1,7 +1,8 @@
 # sfs
+
 ***
  [Variational Shape From Shading](https://people.csail.mit.edu/bkph/papers/Variational_SFS.pdf)
- ***
+***
 **Notes**
 
 Rendering Equation describes how light is emited from a surface
@@ -20,7 +21,9 @@ Simplification under lambertian surface assumption and $L_{emit}=0$
 $$
 L_{\text{out}} = \rho \cdot L_{\text{in}} \cdot (\mathbf{n} \cdot \mathbf{s})
 =R(n)$$
+
 ***
+
 **Shape From Shading**
 
 Assumptions

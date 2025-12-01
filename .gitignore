@@ -6,3 +6,8 @@ GT_data4
 images/
 test.py
 .DS_Store
+_metrics_old/
+out*
+notes.md 
+rando.py
+stereo_outputs/
