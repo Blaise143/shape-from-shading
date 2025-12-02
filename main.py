@@ -1,99 +1,126 @@
-from sfs import shape_from_shading
+from src.sfs import shape_from_shading
 import torch
 import numpy as np
-from utils import *  # .grad_helpers import *
-from config import SFSConfig
+from utils import plot_normals, integrate_normals, plot_depth_3d_plotly, plot_2d
+from src.config import SFSConfig
 from typing import Optional
-from data_load import ShapeFromShadingDataset
+from src.data_load import ShapeFromShadingDataset
 import os
+from typing import Literal
 
 
 def run(
-    dataset,
-    base_out_dir: str = "out",
-    focus_object: Optional[str] = None,
+    dataset: ShapeFromShadingDataset,
+    out_path: str = "out",
+    target: Optional[str] = None,
     num_iters: int = 2000,
     lr: float = 1e-2,
     lambda_smooth: float = 1.0,
     optimize_light: bool = True,
     light_direction: torch.Tensor = torch.tensor([0.0, 0.0, 1]),
     optimize_albedo: bool = False,
-    init_kind: str = "init_grads",
-    parametrization_type: str = "cartesian",
+    init_kind: Literal["init_grads", "zeroes", "ones", "sphere"] = "init_grads",
+    parametrization_type: Literal["cartesian", "stereographic"] = "cartesian",
 ):
-    for cue in dataset.cues:
-        objects = [focus_object] if focus_object else dataset.list_objects(cue)
+    os.makedirs(out_path, exist_ok=True)
 
-        for obj in objects:
-            print(f"\n Running Shape-from-Shading for {cue}/{obj}...")
+    if target is not None:
+        objects = [target]
+    else:
+        objects = dataset.list_objects()
 
-            paths = dataset.get(cue=cue, obj=obj)
-            img_pth, msk_pth = paths["image"], paths["mask"]
+    for obj in objects:
+        print(f"\n Running Shape-from-Shading for '{obj}'...")
 
-            if not os.path.exists(img_pth) or msk_pth is None:
-                print(f"Skipping {cue}/{obj} (missing image or mask)")
-                continue
+        try:
+            paths = dataset.get(obj)
+        except ValueError as e:
+            print(f"Skipping '{obj}': {e}")
+            continue
 
-            folder_name = make_output_folder(base_dir=base_out_dir, cue=cue, obj=obj)
+        img_pth, msk_pth = paths["image"], paths["mask"]
 
-            config = SFSConfig(
-                image_path=img_pth,
-                num_iters=num_iters,
-                lambda_smooth=lambda_smooth,
-                lr=lr,
-                optimize_light=optimize_light,
-                light_direction=light_direction,
-                save_to=folder_name,
-                optimize_albedo=optimize_albedo,
-                use_mask=True,
-                init_kind=init_kind,
-                # pyrefly: ignore [bad-argument-type]
-                parametrization_type=parametrization_type,
-            )
-            config.save_params(path=f"{folder_name}/params.json")
+        if not os.path.exists(img_pth) or not os.path.exists(msk_pth):
+            print(f"Skipping '{obj}' (missing image or mask)")
+            continue
 
-            normals, reflectance, mask = shape_from_shading(
-                config, mask_pth=msk_pth, kind="custom_mask"
-            )
+        folder_name = os.path.join(out_path, obj)
+        os.makedirs(folder_name, exist_ok=True)
 
-            plot_normals(normals, save_path=f"{folder_name}/normals.png")
-            np.save(f"{folder_name}/normals.npy", normals.numpy())
-            z = integrate_normals(normals.numpy() * mask[..., None])
-            depth = torch.from_numpy(z)
-            torch.save(depth, f"{folder_name}/depth.pt")
-            torch.save(normals, f"{folder_name}/normal.pt")
+        config = SFSConfig(
+            image_path=img_pth,
+            num_iters=num_iters,
+            lambda_smooth=lambda_smooth,
+            lr=lr,
+            optimize_light=optimize_light,
+            light_direction=light_direction,
+            save_to=folder_name,
+            optimize_albedo=optimize_albedo,
+            use_mask=True,
+            init_kind=init_kind,
+            parametrization_type=parametrization_type,
+        )
+        config.save_params(path=f"{folder_name}/params.json")
 
-            plot_depth_3d_plotly(
-                depth=z,
-                save_path=f"{folder_name}/depth.html",
-                show=False,
-                normalize_xyz=False,
-                mask=mask,
-                hide_invalid=True,
-            )
+        normals, reflectance, mask = shape_from_shading(
+            config, mask_pth=msk_pth, kind="custom_mask"
+        )
 
-            plot_2d(
-                reflectance,
-                title="reflectance",
-                save_path=f"{folder_name}/reflectance.png",
-            )
-            print("final inspection: normals, mask, z")
+        plot_normals(normals, save_path=f"{folder_name}/normals.png")
+        np.save(f"{folder_name}/normals.npy", normals.numpy())
+        torch.save(normals, f"{folder_name}/normal.pt")
 
-            print(f" Finished {cue}/{obj}. Results saved to {folder_name}")
+        z = integrate_normals(normals.numpy() * mask[..., None])
+        depth = torch.from_numpy(z)
+        torch.save(depth, f"{folder_name}/depth.pt")
+
+        plot_depth_3d_plotly(
+            depth=z,
+            save_path=f"{folder_name}/depth.html",
+            show=False,
+            normalize_xyz=False,
+            mask=mask,
+            hide_invalid=True,
+        )
+
+        plot_2d(
+            reflectance,
+            title="reflectance",
+            save_path=f"{folder_name}/reflectance.png",
+        )
+
+        print("final inspection: normals, mask, z")
+        print(f" Finished '{obj}'. Results saved to {folder_name}")
 
 
 if __name__ == "__main__":
-    dataset = ShapeFromShadingDataset(root_dir="GT_data4")
+    dataset = ShapeFromShadingDataset(
+        images_dir="GT_data4/Cue1",
+        masks_dir="GT_data4/Masks",
+    )
     run(
         dataset,
-        base_out_dir="stereo_outputs",
-        focus_object=None,  # sphere, pyramid, None, cube, ball
+        out_path="test_stereographic",
+        # target="sphere",
         num_iters=2000,
         lr=0.01,
-        lambda_smooth=1,
+        lambda_smooth=1.0,
         optimize_light=True,
         light_direction=torch.tensor([0, 0, 1.0]),
         optimize_albedo=False,
         init_kind="init_grads",
         parametrization_type="stereographic",
+    )
+    run(
+        dataset,
+        out_path="test_cartesian",
+        # target="sphere",
+        num_iters=2000,
+        lr=0.01,
+        lambda_smooth=1.0,
+        optimize_light=True,
+        light_direction=torch.tensor([0, 0, 1.0]),
+        optimize_albedo=False,
+        init_kind="init_grads",
+        parametrization_type="cartesian",
     )

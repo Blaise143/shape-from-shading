@@ -1,15 +1,7 @@
 import cv2
 import numpy as np
-
-
-def _robustify_pq(p, q, grad_clip_pct=99.0, pq_smooth_sigma=1.0):
-    for arr in (p, q):
-        lo, hi = np.percentile(arr, [100 - grad_clip_pct, grad_clip_pct])
-        np.clip(arr, lo, hi, out=arr)
-    k = max(1, int(2 * round(pq_smooth_sigma) + 1))
-    p = cv2.GaussianBlur(p, (k, k), pq_smooth_sigma)
-    q = cv2.GaussianBlur(q, (k, k), pq_smooth_sigma)
-    return p, q
+from utils.initializations import _robustify_pq
+from typing import Tuple
 
 
 def _poisson_integration(p: np.ndarray, q: np.ndarray):
@@ -31,16 +23,13 @@ def _poisson_integration(p: np.ndarray, q: np.ndarray):
 
 
 def integrate_normals(
-    normals,
-    grad_clip_pct=99.0,
-    pq_smooth_sigma=1.0,
-    x_range=(-1.0, 1.0),
-    y_range=(-1.0, 1.0),
+    normals: np.ndarray,
+    x_range: Tuple[float, float] = (-1.0, 1.0),
+    y_range: Tuple[float, float] = (-1.0, 1.0),
 ):
     """
-    normals: (H, W, 3) unit normals.
+    Given normals (H,W,3), returns the depth by integrating over them.
     """
-    print("integrating")
     H, W, _ = normals.shape
 
     nz = np.clip(normals[:, :, 2], 1e-6, None)
@@ -55,7 +44,7 @@ def integrate_normals(
     p = p_world * dx
     q = q_world * dy
 
-    p, q = _robustify_pq(p, q, grad_clip_pct, pq_smooth_sigma)
+    p, q = _robustify_pq(p, q)  # , grad_clip_pct, pq_smooth_sigma)
 
     z = _poisson_integration(p, q)
 
