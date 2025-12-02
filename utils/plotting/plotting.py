@@ -6,6 +6,7 @@ import numpy as np
 from typing import Union, Optional
 from pathlib import Path
 import io
+import imageio
 from utils.plotting.helpers import to_numpy, apply_mask, save_or_show, normals_to_rgb
 
 TensorLike = Union[np.ndarray, torch.Tensor]
@@ -65,7 +66,7 @@ def plot_normals(
     save_path: Optional[PathLike] = None,
     show: bool = False,
     mask: Optional[TensorLike] = None,
-    title: Optional[str] = "Normal Map",
+    title: Optional[str] = None,
 ) -> None:
     """
     Plot a normal map (RGB) and, optionally, its individual XYZ components.
@@ -83,6 +84,26 @@ def plot_normals(
         hide_axis=True,
         pad_inches=0.1,
     )
+
+
+def save_depth_png(depth: np.ndarray, mask: np.ndarray, out_path: str) -> None:
+    """
+    Save a depth map as a masked, normalized PNG.
+    """
+    depth_masked = np.where(mask, depth, np.nan)
+
+    vmin = np.nanmin(depth_masked)
+    vmax = np.nanmax(depth_masked)
+    denom = (vmax - vmin) if vmax > vmin else 1.0
+
+    depth_norm = (depth_masked - vmin) / denom
+    depth_norm = 1.0 - depth_norm
+
+    depth_img = np.nan_to_num(depth_norm, nan=0.0)
+    depth_img = (depth_img * 255).astype(np.uint8)
+    depth_img[~mask] = 255
+
+    imageio.imwrite(out_path, depth_img)
 
 
 def plot_depth_3d_plotly(

@@ -6,6 +6,7 @@ from utils.plotting import (
     plot_normals,
     plot_depth_3d_plotly,
     plot_component_normals,
+    save_depth_png,
 )
 from utils.initializations import get_init  # Initializers, initialize_normals
 from utils.stereo_maps import fg_to_normals, normals_to_fg

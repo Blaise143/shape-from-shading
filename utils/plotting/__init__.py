@@ -5,4 +5,5 @@ from utils.plotting.plotting import (
     plot_normals,
     plot_depth_3d_plotly,
     plot_component_normals,
+    save_depth_png,
 )
