@@ -45,6 +45,6 @@ The following arguments can be passed optionally. The defaults are also written.
 
 | Input       | GroundTruth Depth | Predicted Depth| GroundTruth Normals | Predicted Normals |
 |-------------|-------------------|----------------|---------------------|-------------------|
-|<img src="data/inputs/sphere.png" width="200" height="200">|<img src="data/gt_depths/sphere.png" width="200" height="200">|<img src="data/pred_depths/sphere.png" width="200" height="200">|<img src="data/gt_normals/sphere.png" width="200", height="200">|<img src="data/pred_normals/sphere.png" width="200" height="200">|
+|<img src="data/inputs/sphere.png" width="200" height="200">|<img src="data/gt_depths/sphere.png" width="200" height="200">|<img src="data/pred_depths/sphere.png" width="200" height="200">|<img src="data/gt_normals/sphere.png" width="200" height="200">|<img src="data/pred_normals/sphere.png" width="200" height="200">|
 
 
