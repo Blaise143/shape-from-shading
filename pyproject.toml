@@ -1,8 +1,2 @@
 [tool.ruff]
 ignore = ["F405"]
-
-[tool.pyrefly]
-project-includes = [
-    "**/*.py*",
-    "**/*.ipynb",
-]
