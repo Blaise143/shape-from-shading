@@ -4,7 +4,10 @@ from src.config import SFSConfig
 
 
 def l2_smoothness(x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-    """ """
+    """
+    Calculate the smoothness loss, the L2 norm of the partial derivatives of x.
+    The domain of where to take the loss is specified by mask
+    """
     if mask is not None:
         x = x * mask[..., None]
     grads = torch.gradient(x, dim=(0, 1))  # grad_x , grad_y
@@ -24,6 +27,9 @@ def normalize_normals(n: torch.Tensor) -> torch.Tensor:
 def get_light_direction(
     cfg: SFSConfig, device: Literal["cuda", "mps", "cpu"]
 ) -> torch.Tensor:
+    """
+    Returns a default light direction of [0.3,0.3,0.9] if the cfg doesnt have one already.
+    """
     if cfg.light_direction is None:
         return torch.tensor([0.3, 0.3, 0.9], device=device)
     return cfg.light_direction.to(device)
