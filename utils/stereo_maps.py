@@ -1,7 +1,11 @@
 import torch
 
 
-def fg_to_normals(fg: torch.Tensor):
+def fg_to_normals(fg: torch.Tensor) -> torch.Tensor:
+    """
+    Takes in a tensor of stereographic
+    parameters and converts them to normals
+    """
     f, g = fg[..., 0], fg[..., 1]
     r2 = f**2 + g**2
 
@@ -13,7 +17,8 @@ def fg_to_normals(fg: torch.Tensor):
     return torch.stack((nx, ny, nz), dim=-1)
 
 
-def normals_to_fg(normals: torch.Tensor):
+def normals_to_fg(normals: torch.Tensor) -> torch.Tensor:
+    """Takes in normals, return a tensor of f,g stereographic parameters"""
     normals = normals / (normals.norm(dim=-1, keepdim=True) + 1e-8)
     nx, ny, nz = normals[..., 0], normals[..., 1], normals[..., 2]
 
