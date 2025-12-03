@@ -43,8 +43,10 @@ The following arguments can be passed optionally. The defaults are also written.
 
 ## Sample Results
 
-| Input       | GroundTruth Depth | Predicted Depth| GroundTruth Normals | Predicted Normals |
-|-------------|-------------------|----------------|---------------------|-------------------|
-|<img src="data/inputs/sphere.png" width="200" height="200">|<img src="data/gt_depths/sphere.png" width="200" height="200">|<img src="data/pred_depths/sphere.png" width="200" height="200">|<img src="data/gt_normals/sphere.png" width="200" height="200">|<img src="data/pred_normals/sphere.png" width="200" height="200">|
-
-
+| Input       | GroundTruth Depth | Predicted Depth | GroundTruth Normals | Predicted Normals |
+|-------------|-------------------|-----------------|---------------------|-------------------|
+| <img src="data/inputs/sphere.png"   width="200" height="200"> | <img src="data/gt_depths/sphere.png"   width="200" height="200"> | <img src="data/pred_depths/sphere.png"   width="200" height="200"> | <img src="data/gt_normals/sphere.png"   width="200" height="200"> | <img src="data/pred_normals/sphere.png"   width="200" height="200"> |
+| <img src="data/inputs/cube.png"     width="200" height="200"> | <img src="data/gt_depths/cube.png"     width="200" height="200"> | <img src="data/pred_depths/cube.png"     width="200" height="200"> | <img src="data/gt_normals/cube.png"     width="200" height="200"> | <img src="data/pred_normals/cube.png"     width="200" height="200"> |
+| <img src="data/inputs/cylinder.png" width="200" height="200"> | <img src="data/gt_depths/cylinder.png" width="200" height="200"> | <img src="data/pred_depths/cylinder.png" width="200" height="200"> | <img src="data/gt_normals/cylinder.png" width="200" height="200"> | <img src="data/pred_normals/cylinder.png" width="200" height="200"> |
+| <img src="data/inputs/pyramid.png"  width="200" height="200"> | <img src="data/gt_depths/pyramid.png"  width="200" height="200"> | <img src="data/pred_depths/pyramid.png"  width="200" height="200"> | <img src="data/gt_normals/pyramid.png"  width="200" height="200"> | <img src="data/pred_normals/pyramid.png"  width="200" height="200"> |
+| <img src="data/inputs/cone.png"     width="200" height="200"> | <img src="data/gt_depths/cone.png"     width="200" height="200"> | <img src="data/pred_depths/cone.png"     width="200" height="200"> | <img src="data/gt_normals/cone.png"     width="200" height="200"> | <img src="data/pred_normals/cone.png"     width="200" height="200"> |
