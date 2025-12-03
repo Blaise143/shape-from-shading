@@ -1,0 +1,6 @@
+imageio==2.37.0
+opencv_python==4.12.0.88
+plotly==6.3.1
+torch==2.8.0
+torchvision==0.23.0
+tqdm==4.67.1
