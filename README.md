@@ -22,27 +22,29 @@ To run this, you will need:
 Run over **all** objects found in the image directory:
 
 ```bash
-python main.py \
-  --images-dir data/images \
-  --masks-dir data/masks \
-  --out-path out
+python main.py --images-dir data/images --masks-dir data/masks --out-path out
 ```
 
 Run on a single object (for instance a sphere in this example)
 ``` bash
-python main.py \
-  --images-dir data/images \
-  --masks-dir data/masks \
-  --out-path out \
-  --target sphere
+python main.py --images-dir data/images --masks-dir data/masks --out-path out --target sphere
 ```
 
 ## Optional Arguments
-- --num-iters (default: 2000)
-- --lr (default: 0.01)
-- --lambda-smooth (default: 1.0)
-- --light-direction LX LY LZ (default: 0.0 0.0 1.0)
-- --no-optimize-light / --optimize-light
-- --optimize-albedo
-- --init-kind {init_grads, zeroes, ones, sphere}
-- --parametrization-type {cartesian, stereographic}
+The following arguments can be passed optionally. The defaults are also written.
+- `--num-iters` (default: 2000)
+- `--lr` (default: 0.01)
+- `--lambda-smooth` (default: 1.0)
+- `--light-direction` $(l_x, l_y, l_z)$ (default: 0.0 0.0 1.0)
+- `--no-optimize-light` / `--optimize-light` (default: optimize-light=True)
+- `--optimize-albedo`
+- `--init-kind` {init_grads, zeroes, ones, sphere}
+- `--parametrization-type` {cartesian, stereographic} (default: stereographic)
+
+## Sample Results
+
+| Input       | GroundTruth Depth | Predicted Depth| GroundTruth Normals | Predicted Normals |
+|-------------|-------------------|----------------|---------------------|-------------------|
+|<img src="data/inputs/sphere.png">|<img src="data/gt_depths/sphere.png">|<img src="data/pred_depths/sphere.png">|<img src="data/gt_normals/sphere.png">|<img src="data/pred_normals/sphere.png">|
+
+
