@@ -6,6 +6,9 @@ import os
 
 
 def calculate_normals_numpy(depth_map: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """
+    Given a depth map and a region of interest as a mask, return the normals in that region
+    """
     depth_map = gaussian_filter(depth_map, sigma=0.2)
     dZ_dy, dZ_dx = np.gradient(depth_map.astype(np.float32))
 

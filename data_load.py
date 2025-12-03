@@ -1,45 +1,73 @@
 import os
 from glob import glob
+from typing import Optional, Dict, List
+from pathlib import Path
 
 
 class ShapeFromShadingDataset:
-    def __init__(self, root_dir="GT_data4", cues=("Cue1", "Cue2", "Cue3")):
-        self.root_dir = root_dir
-        self.cues = cues
-        self.masks_dir = os.path.join(root_dir, "Masks")
-        self.data = self._load_all()
+    def __init__(
+        self,
+        images_dir: str,
+        masks_dir: str,
+        image_ext: str = "png",
+        mask_ext: Optional[str] = None,
+    ):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.image_ext = image_ext
+        self.mask_ext = mask_ext or image_ext  # default: same as image_ext
 
-    def _load_all(self):
-        data = {}
-        for cue in self.cues:
-            cue_path = os.path.join(self.root_dir, cue)
-            data[cue] = {}
-            for img_path in glob(os.path.join(cue_path, "*.png")):
-                obj_name = os.path.splitext(os.path.basename(img_path))[0]
-                mask_path = os.path.join(self.masks_dir, f"{obj_name}.png")
-                data[cue][obj_name] = {
-                    "image": img_path,
-                    "mask": mask_path if os.path.exists(mask_path) else None,
-                }
-        return data
+        if not os.path.isdir(self.images_dir):
+            raise FileNotFoundError(f"Images directory not found: {self.images_dir}")
+        if not os.path.isdir(self.masks_dir):
+            raise FileNotFoundError(f"Masks directory not found: {self.masks_dir}")
 
-    def get(self, cue="Cue1", obj="sphere"):
-        """Return dict with image + mask paths for a given cue/object"""
-        if cue not in self.data or obj not in self.data[cue]:
-            raise ValueError(f"Invalid cue/object: {cue}/{obj}")
-        return self.data[cue][obj]
+        self.samples: Dict[str, Dict[str, str]] = self._index()
 
-    def list_objects(self, cue):
-        if cue not in self.data:
-            raise ValueError(f"Invalid cue: {cue}")
-        return list(self.data[cue].keys())
+    def _index(self) -> Dict[str, Dict[str, str]]:
+        samples: Dict[str, Dict[str, str]] = {}
+
+        pattern = os.path.join(self.images_dir, f"*.{self.image_ext}")
+        for img_path in glob(pattern):
+            name = Path(img_path).stem
+            mask_path = os.path.join(self.masks_dir, f"{name}.{self.mask_ext}")
+
+            if not os.path.exists(mask_path):
+                raise FileNotFoundError(
+                    f"Mask not found for '{name}': expected {mask_path}"
+                )
+
+            samples[name] = {
+                "image": img_path,
+                "mask": mask_path,
+            }
+
+        if not samples:
+            raise RuntimeError(
+                f"No image/mask pairs found in {self.images_dir} / {self.masks_dir}"
+            )
+
+        return samples
+
+    def list_objects(self) -> List[str]:
+        """Return list of all object names (basenames without extension)."""
+        return sorted(self.samples.keys())
+
+    def get(self, name: str) -> Dict[str, str]:
+        """
+        Return dict with image + mask paths for a given object name.
+
+        Example:
+            dataset.get("sphere") ->
+            {
+                "image": ".../Images/sphere.png",
+                "mask":  ".../Masks/sphere.png",
+            }
+        """
+        if name not in self.samples:
+            raise ValueError(f"Unknown object '{name}'. Known: {self.list_objects()}")
+        return self.samples[name]
 
 
 if __name__ == "__main__":
-    import pprint as pp
-
-    dataset = ShapeFromShadingDataset()
-    pp.pprint(dataset._load_all())
-
-    pyramid = dataset.get("Cue1", obj="pyramid")
-    pp.pprint(pyramid)
+    ...

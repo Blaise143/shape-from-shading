@@ -15,7 +15,7 @@ class SFSConfig:
     save_to: Optional[str] = None
     optimize_albedo: bool = False
     use_mask: bool = False
-    init_kind: str = "init_grads"
+    init_kind: Literal["init_grads", "zeroes", "ones", "sphere"] = "init_grads"
     desc: Optional[str] = None
     parametrization_type: Literal["cartesian", "stereographic"] = "cartesian"
 
