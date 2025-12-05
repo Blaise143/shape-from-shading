@@ -8,8 +8,38 @@ There are two variants of the optimization implemented:
 - **Stereographic parametrization:** 
    we optimize stereographic parameters and map them back to normals.
   
-#### Python Version: 3.12
 
+## Setup Instructions and Installations
+
+### Clone the repository
+
+   ```bash
+   git clone <REPO_URL>
+   cd sfs
+   ```
+
+### Create a Conda Environment
+
+```bash
+conda create -n sfs python=3.10
+conda activate sfs
+```
+
+You can replace `sfs` with any name you prefer.
+
+---
+
+*** Check Your CUDA Version `nvcc --version` If `nvcc` is not installed, make sure you’ve installed the CUDA Toolkit and added it to your system PATH.***
+
+---
+
+### Install packages
+
+Install a compatible packages:
+
+```bash
+pip install -r requirements.txt
+```
 ## Data layout
 
 To run this, you will need:

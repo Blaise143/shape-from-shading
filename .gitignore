@@ -3,7 +3,6 @@ wandb
 .idea
 out/
 GT_data4
-images/
 test.py
 .DS_Store
 _metrics_old/
