@@ -25,13 +25,7 @@ conda create -n sfs python=3.10
 conda activate sfs
 ```
 
-You can replace `sfs` with any name you prefer.
-
----
-
-***Check Your CUDA Version `nvcc --version` If `nvcc` is not installed, make sure you’ve installed the CUDA Toolkit and added it to your system PATH.***
-
----
+***You can replace `sfs` with any name you prefer.***
 
 ### Install packages
 
