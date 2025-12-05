@@ -29,7 +29,7 @@ You can replace `sfs` with any name you prefer.
 
 ---
 
-*** Check Your CUDA Version `nvcc --version` If `nvcc` is not installed, make sure you’ve installed the CUDA Toolkit and added it to your system PATH.***
+***Check Your CUDA Version `nvcc --version` If `nvcc` is not installed, make sure you’ve installed the CUDA Toolkit and added it to your system PATH.***
 
 ---
 
