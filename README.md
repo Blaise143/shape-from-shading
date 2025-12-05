@@ -7,6 +7,8 @@ There are two variants of the optimization implemented:
   The normal components $(n_x, n_y, n_z)$ are optimized directly.
 - **Stereographic parametrization:** 
    we optimize stereographic parameters and map them back to normals.
+  
+#### Python Version: 3.12
 
 ## Data layout
 
