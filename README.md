@@ -16,12 +16,24 @@ There are two variants of the optimization implemented:
    ```bash
    git clone <REPO_URL>
    cd sfs
-   ```
+```
+
+You can either:
+- use the provided `run.sh` script (**recommended for quick start**), or
+- follow the manual setup steps below for more control.
+
+To use the provided `run.sh` script:
+```bash 
+chmod +x run.sh
+./run.sh
+```
+**Note:** This script assumes that data and mask directories are `data/images` and `data/masks` respectively.  To customize optimization parameters (e.g. learning rate, number of iterations, or parametrization type), run `main.py` manually with the desired command-line flags, or follow the manual setup instructions below. 
+
 
 ### Create a Conda Environment
 
 ```bash
-conda create -n sfs python=3.10
+conda create -n sfs python=3.11
 conda activate sfs
 ```
 
