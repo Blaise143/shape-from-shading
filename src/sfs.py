@@ -6,7 +6,6 @@ from tqdm import tqdm
 import wandb
 import numpy as np
 from src.config import SFSConfig
-from typing import Optional
 
 from utils import (
     get_device,
@@ -27,19 +26,38 @@ from src.core_utils import (
 
 def shape_from_shading(
     cfg: SFSConfig,
-    mask_pth: Optional[str] = None,
-    kind: str = "custom_mask",
+    mask_pth: str,
     use_wandb: bool = False,
     log_intermediates: bool = False,
 ):
     """
     Main SFS optimization loop.
 
-    When mask is None -> sphere; when it isn't -> cube (according to get_img_and_mask).
+    Loads the image/mask, initializes a normal map, and optimizes it (plus
+    optionally light direction and albedo) by gradient descent on a
+    Lambertian reflectance loss with a smoothness regularizer:
+    ``loss = (R - I)^2 + lambda_smooth * l2_smoothness(n)``, where
+    ``R = max(0, n . L)`` is the predicted reflectance.
+
+    Args:
+        cfg: Run configuration; see :class:`~src.config.SFSConfig`.
+        mask_pth: Path to the binary mask image for `cfg.image_path`.
+        use_wandb: If True, logs per-iteration losses to Weights & Biases.
+        log_intermediates: If True, saves a normal-map snapshot every 200
+            iterations to ``{cfg.save_to}/normals{it}.png``.
+
+    Returns:
+        tuple: ``(normals, reflectance, mask)`` where
+
+        - ``normals`` is the optimized, mask-zeroed normal map, shape
+          ``(H, W, 3)``, on CPU.
+        - ``reflectance`` is the predicted reflectance map, shape ``(H, W)``,
+          on CPU.
+        - ``mask`` is the boolean mask as a numpy array, shape ``(H, W)``.
     """
     device = get_device()
 
-    img_np, mask = get_img_and_mask(cfg.image_path, mask_path=mask_pth, kind=kind)
+    img_np, mask = get_img_and_mask(cfg.image_path, mask_path=mask_pth)
     if isinstance(mask, np.ndarray):
         mask = torch.from_numpy(mask).to(device)
 

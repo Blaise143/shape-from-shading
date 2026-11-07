@@ -5,13 +5,19 @@ import torch
 
 
 def parse_args() -> argparse.Namespace:
+    """Build and parse the command-line interface for running Shape-from-Shading.
+
+    Returns:
+        argparse.Namespace: Parsed CLI arguments, one attribute per flag
+        (e.g. ``args.images_dir``, ``args.num_iters``), ready to be passed
+        into :func:`src.run.run`.
+    """
     parser = argparse.ArgumentParser(
         description="Run Shape-from-Shading on a dataset of images + masks."
     )
     parser.add_argument(
         "--images-dir",
         type=str,
-        # default="GT_data4/Cue1",
         required=True,
         help="Image directory",
     )
@@ -19,7 +25,6 @@ def parse_args() -> argparse.Namespace:
         "--masks-dir",
         type=str,
         required=True,
-        # default="GT_data4/Masks",
         help="Directory with mask images.",
     )
 
@@ -96,10 +101,26 @@ def parse_args() -> argparse.Namespace:
         default="stereographic",
         help="Normal parametrization.",
     )
+    parser.add_argument(
+        "--use-wandb",
+        action="store_true",
+        help="Log losses to Weights & Biases.",
+    )
+    parser.add_argument(
+        "--log-intermediates",
+        action="store_true",
+        help="Periodically save intermediate normal maps during optimization.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
+    """Entry point: parse CLI args, build the dataset, and run the SFS pipeline.
+
+    Builds a :class:`~src.data_load.ShapeFromShadingDataset` from
+    ``--images-dir``/``--masks-dir`` and hands it, along with the rest of the
+    parsed flags, to :func:`src.run.run`.
+    """
     args = parse_args()
     dataset = ShapeFromShadingDataset(
         images_dir=args.images_dir,
@@ -119,6 +140,8 @@ def main() -> None:
         optimize_albedo=args.optimize_albedo,
         init_kind=args.init_kind,
         parametrization_type=args.parametrization_type,
+        use_wandb=args.use_wandb,
+        log_intermediates=args.log_intermediates,
     )
 
 

@@ -5,8 +5,18 @@ from typing import Tuple
 
 
 def _poisson_integration(p: np.ndarray, q: np.ndarray):
-    """
-    Creates a laplacian, throws it into the frequenxy domain
+    """Solve the Poisson equation for depth given gradient fields p, q.
+
+    Builds a discrete Laplacian from the divergence of ``(p, q)``, solves
+    the Poisson equation in the frequency domain via a discrete cosine
+    transform, and inverts back to get the depth map.
+
+    Args:
+        p: Gradient field in x, shape ``(H, W)``.
+        q: Gradient field in y, shape ``(H, W)``.
+
+    Returns:
+        np.ndarray: Reconstructed depth map, shape ``(H, W)``.
     """
     H, W = p.shape
     lap = np.zeros((H, W), np.float32)
@@ -27,8 +37,20 @@ def integrate_normals(
     x_range: Tuple[float, float] = (-1.0, 1.0),
     y_range: Tuple[float, float] = (-1.0, 1.0),
 ):
-    """
-    Given normals (H,W,3), returns the depth by integrating over them.
+    """Integrate a normal map into a depth map via Poisson/DCT integration.
+
+    Converts normals to surface gradients ``(p, q)``, scales them into world
+    units given `x_range`/`y_range`, robustifies them (clip + blur, via
+    :func:`utils.initializations._robustify_pq`), and integrates with
+    :func:`_poisson_integration`.
+
+    Args:
+        normals: Normal map of shape ``(H, W, 3)``.
+        x_range: World-space ``(min, max)`` extent of the image in x.
+        y_range: World-space ``(min, max)`` extent of the image in y.
+
+    Returns:
+        np.ndarray: Depth map of shape ``(H, W)``.
     """
     H, W, _ = normals.shape
 

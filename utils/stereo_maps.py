@@ -2,9 +2,18 @@ import torch
 
 
 def fg_to_normals(fg: torch.Tensor) -> torch.Tensor:
-    """
-    Takes in a tensor of stereographic
-    parameters and converts them to normals
+    """Convert stereographic parameters ``(f, g)`` back to unit normals.
+
+    Inverts :func:`normals_to_fg` via the standard stereographic projection
+    formula, so normals can be optimized in an unconstrained 2D space (`f`,
+    `g`) while always mapping back to valid unit vectors.
+
+    Args:
+        fg: Tensor of shape ``(..., 2)`` holding stereographic parameters
+            ``(f, g)`` in its last dimension.
+
+    Returns:
+        torch.Tensor: Unit normal map of shape ``(..., 3)``.
     """
     f, g = fg[..., 0], fg[..., 1]
     r2 = f**2 + g**2
@@ -18,7 +27,18 @@ def fg_to_normals(fg: torch.Tensor) -> torch.Tensor:
 
 
 def normals_to_fg(normals: torch.Tensor) -> torch.Tensor:
-    """Takes in normals, return a tensor of f,g stereographic parameters"""
+    """Convert unit normals to stereographic parameters ``(f, g)``.
+
+    Normals are first renormalized to unit length, then projected via
+    ``f = 2*nx / (1 + nz)``, ``g = 2*ny / (1 + nz)``. This is the inverse of
+    :func:`fg_to_normals`.
+
+    Args:
+        normals: Normal map of shape ``(..., 3)``.
+
+    Returns:
+        torch.Tensor: Stereographic parameters of shape ``(..., 2)``.
+    """
     normals = normals / (normals.norm(dim=-1, keepdim=True) + 1e-8)
     nx, ny, nz = normals[..., 0], normals[..., 1], normals[..., 2]
 

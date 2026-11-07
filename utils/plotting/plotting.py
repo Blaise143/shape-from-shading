@@ -22,7 +22,17 @@ def plot_image(
     hide_axis: bool = False,
     pad_inches: float = 0.0,
 ) -> None:
-    """Plots image, optionally saves it"""
+    """Plot an image with matplotlib, optionally saving and/or showing it.
+
+    Args:
+        img: Image to plot (numpy array or torch tensor).
+        title: Optional axes title.
+        save_path: If given, the figure is saved to this path.
+        show: If True, displays the figure.
+        cmap: Optional matplotlib colormap name.
+        hide_axis: If True, hides the axis ticks/frame.
+        pad_inches: Padding passed to ``fig.savefig``.
+    """
     img_np = to_numpy(img)
     fig, ax = plt.subplots()
     ax.imshow(img_np, cmap=cmap)
@@ -37,7 +47,16 @@ def plot_image(
 def plot_2d(
     img: TensorLike, title: str, save_path: Optional[PathLike], show: bool = False
 ) -> None:
-    """Save image, optionally show it"""
+    """Plot a 2D image with a title and visible axis; optionally save/show it.
+
+    A thin wrapper around :func:`plot_image` with ``hide_axis=False``.
+
+    Args:
+        img: Image to plot.
+        title: Axes title.
+        save_path: If given, the figure is saved to this path.
+        show: If True, displays the figure.
+    """
     plot_image(
         img=img,
         title=title,
@@ -48,8 +67,16 @@ def plot_2d(
 
 
 def save_init(img: TensorLike, save_path: PathLike, title: str = "input") -> None:
-    """
-    save initialization
+    """Save a snapshot of the input image, axis hidden (used for the run's `input.png`).
+
+    A thin wrapper around :func:`plot_image` with ``hide_axis=True`` and no
+    on-screen display.
+
+    Args:
+        img: Image to save.
+        save_path: Destination path for the saved figure.
+        title: Axes title (not visible since the axis is hidden, but kept
+            for consistency with the other plotting helpers).
     """
     plot_image(
         img=img,
@@ -69,7 +96,19 @@ def plot_normals(
     title: Optional[str] = None,
 ) -> None:
     """
-    Plot a normal map (RGB) and, optionally, its individual XYZ components.
+    Plot a normal map, visualized as an RGB image.
+
+    Converts `normals` to the ``[0, 1]`` RGB visualization range (via
+    :func:`utils.plotting.helpers.normals_to_rgb`) and, if `mask` is given,
+    sets pixels outside the mask to NaN so they render as blank. For a
+    per-component (X/Y/Z) view instead, see :func:`plot_component_normals`.
+
+    Args:
+        normals: Normal map with a trailing channel dim of size 3.
+        save_path: If given, the figure is saved to this path.
+        show: If True, displays the figure.
+        mask: Optional boolean mask of valid pixels.
+        title: Optional axes title.
     """
     rgb = normals_to_rgb(normals)
 
@@ -89,6 +128,14 @@ def plot_normals(
 def save_depth_png(depth: np.ndarray, mask: np.ndarray, out_path: str) -> None:
     """
     Save a depth map as a masked, normalized PNG.
+
+    Depth values are normalized to ``[0, 255]`` and inverted (closer =
+    brighter), with pixels outside the mask forced to white (255).
+
+    Args:
+        depth: Depth map, shape ``(H, W)``.
+        mask: Boolean mask of valid pixels, shape ``(H, W)``.
+        out_path: Destination path for the PNG.
     """
     depth_masked = np.where(mask, depth, np.nan)
 
@@ -108,17 +155,33 @@ def save_depth_png(depth: np.ndarray, mask: np.ndarray, out_path: str) -> None:
 
 def plot_depth_3d_plotly(
     depth: Union[torch.Tensor, np.ndarray],
-    save_path: Optional[str] = None,
+    save_path: Optional[PathLike] = None,
     show: bool = False,
     log: bool = False,
     normalize_xyz: bool = False,
     mask: Optional[Union[torch.Tensor, np.ndarray]] = None,
     hide_invalid: bool = True,
 ):
-    """
-    - if show is true, shows the 3d plot
-    - If save_path is specified, saves to path
-    - if log is true, it logs to wandb
+    """Render a depth map as an interactive 3D surface with Plotly.
+
+    The depth map is downsampled (every 8th pixel) for a lighter-weight
+    plot. If `hide_invalid` is set, `mask` is required and invalid (masked
+    out) pixels are set to NaN so they render as gaps in the surface.
+
+    Args:
+        depth: Depth map, shape ``(H, W)``.
+        save_path: If given, saves the plot as an interactive HTML file at
+            this path.
+        show: If True, opens the plot in a browser via ``fig.show()``.
+        log: If True, renders the figure to a PNG and logs it to wandb.
+        normalize_xyz: If True, rescales X, Y, and depth into ``[0, 1]``.
+        mask: Boolean mask of valid pixels; required when `hide_invalid`
+            is True.
+        hide_invalid: If True, masks out invalid pixels as NaN (gaps) in
+            the surface. Requires `mask`.
+
+    Raises:
+        AssertionError: If `hide_invalid` is True but `mask` is None.
     """
 
     if isinstance(depth, torch.Tensor):
@@ -185,6 +248,20 @@ def plot_component_normals(
     Plot per-component normal maps in a single row of subplots.
     Expects normals in shape (3, H, W) or (H, W, 3).
     Assumes mask is ALWAYS provided and is (H, W).
+
+    Args:
+        normals: Normal map, shape ``(3, H, W)`` or ``(H, W, 3)``.
+        mask: Boolean mask of valid pixels, shape ``(H, W)``; pixels outside
+            it are set to NaN in each component plot.
+        save_dir: If given (along with `name`), saves the figure to
+            ``{save_dir}/{name}.png``.
+        name: Filename (without extension) to save as, when `save_dir` is
+            given.
+        show: If True, displays the figure; otherwise it is closed after
+            any save.
+
+    Raises:
+        ValueError: If `normals` isn't shape ``(3, H, W)`` or ``(H, W, 3)``.
     """
     n = to_numpy(normals)
 
