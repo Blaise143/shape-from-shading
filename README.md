@@ -7,15 +7,16 @@ There are two variants of the optimization implemented:
   The normal components $(n_x, n_y, n_z)$ are optimized directly.
 - **Stereographic parametrization:** 
    we optimize stereographic parameters and map them back to normals.
-  
+
+Full API reference: https://shape-from-shading.readthedocs.io
 
 ## Setup Instructions and Installations
 
 ### Clone the repository
 
-   ```bash
-   git clone <REPO_URL>
-   cd sfs
+```bash
+git clone https://github.com/Blaise143/shape-from-shading.git
+cd shape-from-shading
 ```
 
 You can either:
@@ -41,11 +42,10 @@ conda activate sfs
 
 ### Install packages
 
-Install a compatible packages:
-
 ```bash
 pip install -r requirements.txt
 ```
+
 ## Data layout
 
 To run this, you will need:
@@ -78,9 +78,11 @@ The following arguments can be passed optionally. The defaults are also written.
 - `--optimize-albedo`
 - `--init-kind` {init_grads, zeroes, ones, sphere}
 - `--parametrization-type` {cartesian, stereographic} (default: stereographic)
+- `--use-wandb` (log losses to Weights & Biases)
+- `--log-intermediates` (periodically save intermediate normal maps)
 
 ## Sample Results
-Below are some of the sample results when this method is run with the defaults, using the inputs found in `data/inputs` and their corresponding masks found in `data/Masks`
+Below are some of the sample results when this method is run with the defaults, using the inputs found in `data/images` and their corresponding masks found in `data/masks`
 | Input       | GroundTruth Depth | Predicted Depth | GroundTruth Normals | Predicted Normals |
 |-------------|-------------------|-----------------|---------------------|-------------------|
 | <img src="data/images/sphere.png"   width="200" height="200"> | <img src="data/gt_depths/sphere.png"   width="200" height="200"> | <img src="data/pred_depths/sphere.png"   width="200" height="200"> | <img src="data/gt_normals/sphere.png"   width="200" height="200"> | <img src="data/pred_normals/sphere.png"   width="200" height="200"> |
